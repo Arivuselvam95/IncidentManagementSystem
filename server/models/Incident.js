@@ -19,7 +19,7 @@ const attachmentSchema = new mongoose.Schema({
   },
   path: {
     type: String,
-    required: true
+    required: false
   },
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,

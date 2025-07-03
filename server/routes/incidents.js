@@ -173,7 +173,7 @@ router.post('/', auth, upload.array('attachments', 10), async (req, res) => {
     if (!reporter) {
       return res.status(404).json({ message: 'Reporter not found' });
     }
-
+    console.log(req.files);
     // Process attachments
     const attachments = [];
     if (req.files && req.files.length > 0) {

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Incidents.css';
 
-const IncidentCard = ({ incident, onUpdate }) => {
+const IncidentCard = ({ incident, onUpdate, onHide, onUnhide, showHideOption = false }) => {
   const [expanded, setExpanded] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
@@ -38,10 +39,21 @@ const IncidentCard = ({ incident, onUpdate }) => {
     }
   };
 
+  const handleHideClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (incident.isHidden) {
+      onUnhide(incident._id);
+    } else {
+      onHide(incident._id);
+    }
+    setShowActions(false);
+  };
+
   const slaStatus = getSLAStatus();
 
   return (
-    <div className={`incident-card incident-${incident.severity}`}>
+    <div className={`incident-card incident-${incident.severity} ${incident.isHidden ? 'incident-hidden' : ''}`}>
       <div className="incident-card-header">
         <div className="incident-id-section">
           <span className="incident-id">{incident.id}</span>
@@ -52,18 +64,65 @@ const IncidentCard = ({ incident, onUpdate }) => {
             <span className={`badge badge-${incident.status}`}>
               {incident.status.replace('-', ' ')}
             </span>
+            {incident.isHidden && (
+              <span className="badge badge-hidden">
+                Hidden
+              </span>
+            )}
           </div>
         </div>
         
-        {slaStatus && (
-          <div className={`sla-indicator ${slaStatus.class}`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12,6 12,12 16,14" />
-            </svg>
-            {slaStatus.text}
-          </div>
-        )}
+        <div className="incident-header-actions">
+          {slaStatus && (
+            <div className={`sla-indicator ${slaStatus.class}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12,6 12,12 16,14" />
+              </svg>
+              {slaStatus.text}
+            </div>
+          )}
+          
+          {showHideOption && (incident.status === 'resolved' || incident.status === 'closed') && (
+            <div className="incident-menu">
+              <button
+                className="menu-trigger"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowActions(!showActions);
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="12" cy="5" r="1" />
+                  <circle cx="12" cy="19" r="1" />
+                </svg>
+              </button>
+              
+              {showActions && (
+                <div className="menu-dropdown">
+                  <button
+                    onClick={handleHideClick}
+                    className="menu-item"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      {incident.isHidden ? (
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      ) : (
+                        <>
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </>
+                      )}
+                    </svg>
+                    {incident.isHidden ? 'Show' : 'Hide'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="incident-card-body">

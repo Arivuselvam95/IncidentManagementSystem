@@ -74,6 +74,7 @@ const IncidentAllocation = () => {
   const fetchTeamMembers = async () => {
     try {
       const response = await usersAPI.getTeamMembers();
+      // console.log(response.data);
       setTeamMembers(response.data);
     } catch (error) {
       console.error('Error fetching team members:', error);
@@ -109,7 +110,7 @@ const IncidentAllocation = () => {
     }
 
     try {
-      const assignee = teamMembers.find(member => member._id === allocationData.assigneeId);
+      const assignee = teamMembers.find(member => member.id === allocationData.assigneeId);
       
       await incidentsAPI.assign(allocatingIncident._id, {
         assigneeId: allocationData.assigneeId,
@@ -117,7 +118,7 @@ const IncidentAllocation = () => {
         priority: allocationData.priority,
         dueDate: allocationData.dueDate,
         notes: allocationData.notes,
-        assignedBy: user._id,
+        assignedBy: user.id,
         assignedAt: new Date().toISOString()
       });
 
@@ -227,7 +228,7 @@ const IncidentAllocation = () => {
           <h2>Team Workload</h2>
           <div className="team-members-grid">
             {teamMembers.map(member => (
-              <div key={member._id} className="team-member-card">
+              <div key={member.id} className="team-member-card">
                 <div className="member-info">
                   <div className="member-name">
                     {member.firstName} {member.lastName}
@@ -399,7 +400,7 @@ const IncidentAllocation = () => {
                   >
                     <option value="">Select team member</option>
                     {teamMembers.map(member => (
-                      <option key={member._id} value={member._id}>
+                      <option key={member.id} value={member.id}>
                         {member.firstName} {member.lastName} - {member.department} 
                         ({member.currentWorkload}/{member.maxWorkload} incidents)
                       </option>
@@ -410,7 +411,7 @@ const IncidentAllocation = () => {
                 {allocationData.assigneeId && (
                   <div className="assignee-info">
                     {(() => {
-                      const selectedMember = teamMembers.find(m => m._id === allocationData.assigneeId);
+                      const selectedMember = teamMembers.find(m => m.id === allocationData.assigneeId);
                       return selectedMember ? (
                         <div className="assignee-details">
                           <h4>{selectedMember.firstName} {selectedMember.lastName}</h4>

@@ -249,7 +249,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex;
+  justify-content: flex-end;
   height: 100%;
 }
 
@@ -262,7 +263,7 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: center;
   padding-top: var(--spacing-1);
 }
@@ -279,6 +280,8 @@
 }
 
 .chart-label {
+  position: absolute;
+  bottom: 0;
   font-size: var(--font-size-xs);
   color: var(--neutral-600);
   margin-top: var(--spacing-2);
