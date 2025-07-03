@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { incidentsAPI } from '../../services/api';
+import { incidentsAPI, usersAPI } from '../../services/api';
 import './IncidentDetails.css';
 
 const IncidentDetails = () => {
@@ -17,10 +17,19 @@ const IncidentDetails = () => {
   const [newComment, setNewComment] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [addingComment, setAddingComment] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [editData, setEditData] = useState({});
+  const [assignData, setAssignData] = useState({
+    assigneeId: '',
+    notes: ''
+  });
 
   useEffect(() => {
     if (id) {
       fetchIncident();
+      fetchTeamMembers();
     }
   }, [id]);
 
@@ -29,15 +38,122 @@ const IncidentDetails = () => {
       setLoading(true);
       const response = await incidentsAPI.getById(id);
       setIncident(response.data);
+      // console.log(response.data);
+      setEditData(response.data);
     } catch (error) {
       console.error('Error fetching incident:', error);
       showError('Failed to load incident details');
+      // Use mock data for demonstration
+      const mockIncident = getMockIncident();
+      setIncident(mockIncident);
+      setEditData(mockIncident);
     } finally {
       setLoading(false);
     }
   };
 
-  
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await usersAPI.getTeamMembers();
+      setTeamMembers(response.data);
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+      // Mock team members
+      setTeamMembers([
+        { id: 'user1', firstName: 'John', lastName: 'Doe', role: 'it-support' },
+        { id: 'user2', firstName: 'Jane', lastName: 'Smith', role: 'it-support' },
+        { id: 'user3', firstName: 'Mike', lastName: 'Johnson', role: 'team-lead' }
+      ]);
+    }
+  };
+
+  const getMockIncident = () => ({
+    _id: id,
+    incidentId: 'INC-001',
+    title: 'Email server connectivity issues',
+    description: 'Users unable to send/receive emails since 9:00 AM. The issue appears to be affecting the entire organization with multiple departments reporting email outages.',
+    severity: 'critical',
+    status: 'in-progress',
+    category: 'Email & Communication',
+    urgency: 'high',
+    impact: 'high',
+    priority: 'critical',
+    reporter: {
+      user: 'user1',
+      name: 'Alice Smith',
+      email: 'alice@company.com',
+      phone: '+1-555-0123'
+    },
+    assignee: {
+      user: 'user2',
+      name: 'John Doe',
+      assignedAt: '2024-01-07T09:30:00Z',
+      assignedBy: 'user3'
+    },
+    affectedServices: 'Exchange Server, Outlook, Mobile Email',
+    stepsToReproduce: '1. Open Outlook\n2. Try to send an email\n3. Email gets stuck in outbox\n4. Receiving emails also fails',
+    expectedBehavior: 'Emails should send and receive normally',
+    actualBehavior: 'Emails are not being sent or received',
+    workaround: 'Use web-based email temporarily',
+    resolution: null,
+    sla: {
+      target: '2024-01-07T10:00:00Z',
+      firstResponseTarget: '2024-01-07T09:15:00Z',
+      firstResponseAt: '2024-01-07T09:12:00Z',
+      isBreached: false
+    },
+    createdAt: '2024-01-07T09:00:00Z',
+    updatedAt: '2024-01-07T11:30:00Z',
+    acknowledgedAt: '2024-01-07T09:12:00Z',
+    tags: ['email', 'server', 'critical'],
+    attachments: [
+      {
+        filename: 'error-screenshot.png',
+        originalName: 'Email Error Screenshot.png',
+        mimetype: 'image/png',
+        size: 245760,
+        uploadedBy: 'user1',
+        uploadedAt: '2024-01-07T09:05:00Z',
+        data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+      }
+    ],
+    comments: [
+      {
+        _id: 'comment1',
+        text: 'Initial investigation shows Exchange server is responding but mail flow is blocked.',
+        author: { firstName: 'John', lastName: 'Doe' },
+        isInternal: false,
+        createdAt: '2024-01-07T09:45:00Z'
+      },
+      {
+        _id: 'comment2',
+        text: 'Found the issue - mail connector configuration was changed during last night\'s maintenance.',
+        author: { firstName: 'John', lastName: 'Doe' },
+        isInternal: true,
+        createdAt: '2024-01-07T10:30:00Z'
+      }
+    ],
+    workLogs: [
+      {
+        _id: 'log1',
+        action: 'Incident created',
+        description: 'Incident reported by Alice Smith',
+        user: { firstName: 'System', lastName: '' },
+        timeSpent: 0,
+        isSystemGenerated: true,
+        createdAt: '2024-01-07T09:00:00Z'
+      },
+      {
+        _id: 'log2',
+        action: 'Assigned to John Doe',
+        description: 'Critical email issue requires immediate attention',
+        user: { firstName: 'Admin', lastName: 'User' },
+        timeSpent: 0,
+        isSystemGenerated: false,
+        createdAt: '2024-01-07T09:30:00Z'
+      }
+    ]
+  });
 
   const handleAddComment = async (e) => {
     e.preventDefault();
@@ -53,13 +169,60 @@ const IncidentDetails = () => {
       showSuccess('Comment added successfully');
       setNewComment('');
       setIsInternal(false);
-      fetchIncident(); // Refresh to get new comment
+      fetchIncident();
     } catch (error) {
       console.error('Error adding comment:', error);
       showError('Failed to add comment');
     } finally {
       setAddingComment(false);
     }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await incidentsAPI.update(incident._id, editData);
+      showSuccess('Incident updated successfully');
+      setShowEditModal(false);
+      fetchIncident();
+    } catch (error) {
+      console.error('Error updating incident:', error);
+      showError('Failed to update incident');
+    }
+  };
+
+  const handleAssignSubmit = async (e) => {
+    e.preventDefault();
+    if (!assignData.assigneeId) {
+      showError('Please select an assignee');
+      return;
+    }
+
+    try {
+      const assignee = teamMembers.find(member => member.id === assignData.assigneeId);
+      await incidentsAPI.assign(incident._id, {
+        assigneeId: assignData.assigneeId,
+        assigneeName: `${assignee.firstName} ${assignee.lastName}`,
+        notes: assignData.notes
+      });
+      
+      showSuccess(`Incident assigned to ${assignee.firstName} ${assignee.lastName}`);
+      setShowAssignModal(false);
+      setAssignData({ assigneeId: '', notes: '' });
+      fetchIncident();
+    } catch (error) {
+      console.error('Error assigning incident:', error);
+      showError('Failed to assign incident');
+    }
+  };
+
+  const canEdit = () => {
+    return user?.role === 'admin' || user?.role === 'team-lead' || 
+           (incident?.assignee?.user === user?.id);
+  };
+
+  const canAssign = () => {
+    return user?.role === 'admin' || user?.role === 'team-lead';
   };
 
   const formatTime = (dateString) => {
@@ -83,7 +246,7 @@ const IncidentDetails = () => {
     
     if (timeLeft < 0) {
       return { status: 'breached', text: 'SLA Breached', class: 'sla-breached' };
-    } else if (timeLeft < 3600000) { // Less than 1 hour
+    } else if (timeLeft < 3600000) {
       const minutesLeft = Math.floor(timeLeft / 60000);
       return { status: 'at-risk', text: `${minutesLeft}m left`, class: 'sla-at-risk' };
     } else {
@@ -147,22 +310,28 @@ const IncidentDetails = () => {
           </button>
           
           <div className="incident-actions">
-            {user?.role !== 'reporter' && (
-              <>
-                <button className="btn btn-outline btn-sm">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                  Edit
-                </button>
-                <button className="btn btn-primary btn-sm">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Assign
-                </button>
-              </>
+            {canEdit() && (
+              <button 
+                onClick={() => setShowEditModal(true)}
+                className="btn btn-outline btn-sm"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Edit
+              </button>
+            )}
+            {canAssign() && incident.status === 'new' && (
+              <button 
+                onClick={() => setShowAssignModal(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Assign
+              </button>
             )}
           </div>
         </div>
@@ -412,9 +581,17 @@ const IncidentDetails = () => {
                     {incident.attachments.map((attachment, index) => (
                       <div key={index} className="attachment-item">
                         <div className="attachment-icon">
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49" />
-                          </svg>
+                          {attachment.mimetype?.startsWith('image/') ? (
+                            <img 
+                              src={attachment.data} 
+                              alt={attachment.originalName}
+                              className="attachment-thumbnail"
+                            />
+                          ) : (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49" />
+                            </svg>
+                          )}
                         </div>
                         <div className="attachment-info">
                           <div className="attachment-name">{attachment.originalName}</div>
@@ -422,7 +599,7 @@ const IncidentDetails = () => {
                             {formatFileSize(attachment.size)} • Uploaded {formatTime(attachment.uploadedAt)}
                           </div>
                         </div>
-                        <button className="btn btn-outline btn-sm">Download</button>
+                        <button className="btn btn-outline btn-sm">View</button>
                       </div>
                     ))}
                   </div>
@@ -487,6 +664,130 @@ const IncidentDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Edit Incident</h2>
+              <button onClick={() => setShowEditModal(false)} className="modal-close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleEditSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Title</label>
+                  <input
+                    type="text"
+                    value={editData.title || ''}
+                    onChange={(e) => setEditData({...editData, title: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Description</label>
+                  <textarea
+                    value={editData.description || ''}
+                    onChange={(e) => setEditData({...editData, description: e.target.value})}
+                    className="form-input form-textarea"
+                    rows="4"
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Severity</label>
+                    <select
+                      value={editData.severity || ''}
+                      onChange={(e) => setEditData({...editData, severity: e.target.value})}
+                      className="form-select"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Status</label>
+                    <select
+                      value={editData.status || ''}
+                      onChange={(e) => setEditData({...editData, status: e.target.value})}
+                      className="form-select"
+                    >
+                      <option value="new">New</option>
+                      <option value="assigned">Assigned</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="pending">Pending</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary">Save Changes</button>
+                  <button type="button" onClick={() => setShowEditModal(false)} className="btn btn-outline">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Modal */}
+      {showAssignModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Assign Incident</h2>
+              <button onClick={() => setShowAssignModal(false)} className="modal-close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleAssignSubmit}>
+                <div className="form-group">
+                  <label className="form-label required">Assign To</label>
+                  <select
+                    value={assignData.assigneeId}
+                    onChange={(e) => setAssignData({...assignData, assigneeId: e.target.value})}
+                    className="form-select"
+                    required
+                  >
+                    <option value="">Select team member</option>
+                    {teamMembers.map(member => (
+                      <option key={member.id} value={member.id}>
+                        {member.firstName} {member.lastName} - {member.role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Assignment Notes</label>
+                  <textarea
+                    value={assignData.notes}
+                    onChange={(e) => setAssignData({...assignData, notes: e.target.value})}
+                    className="form-input form-textarea"
+                    rows="3"
+                    placeholder="Any specific instructions..."
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary">Assign Incident</button>
+                  <button type="button" onClick={() => setShowAssignModal(false)} className="btn btn-outline">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

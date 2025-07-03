@@ -67,7 +67,48 @@ const IncidentReporting = () => {
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
-    setAttachments(prev => [...prev, ...files]);
+    
+    // Filter only image files
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length !== files.length) {
+      showError('Only image files are allowed');
+      return;
+    }
+
+    // Convert images to base64 for database storage
+    const processFiles = async () => {
+      const processedFiles = [];
+      
+      for (const file of imageFiles) {
+        try {
+          const base64 = await convertToBase64(file);
+          processedFiles.push({
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: base64,
+            file: file // Keep original file for preview
+          });
+        } catch (error) {
+          console.error('Error converting file to base64:', error);
+          showError(`Failed to process ${file.name}`);
+        }
+      }
+      
+      setAttachments(prev => [...prev, ...processedFiles]);
+    };
+
+    processFiles();
+  };
+
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const removeAttachment = (index) => {
@@ -79,25 +120,21 @@ const IncidentReporting = () => {
     setLoading(true);
 
     try {
-      // Create form data for file upload
-      const submitData = new FormData();
-      
-      // Add incident data
-      Object.keys(formData).forEach(key => {
-        submitData.append(key, formData[key]);
-      });
+      // Prepare incident data with base64 images
+      const incidentData = {
+        ...formData,
+        reporterId: user.id,
+        reporterName: `${user.firstName} ${user.lastName}`,
+        reporterEmail: user.email,
+        attachments: attachments.map(att => ({
+          name: att.name,
+          type: att.type,
+          size: att.size,
+          data: att.data
+        }))
+      };
 
-      // Add reporter info
-      submitData.append('reporterId', user.id);
-      submitData.append('reporterName', `${user.firstName} ${user.lastName}`);
-      submitData.append('reporterEmail', user.email);
-
-      // Add attachments
-      attachments.forEach((file, index) => {
-        submitData.append(`attachments`, file);
-      });
-
-      const response = await incidentsAPI.create(submitData);
+      const response = await incidentsAPI.create(incidentData);
       
       if (response.data) {
         showSuccess(`Incident ${response.data.incidentId} has been created successfully`);
@@ -337,10 +374,10 @@ const IncidentReporting = () => {
         </div>
 
         <div className="form-section">
-          <h2>Attachments</h2>
+          <h2>Image Attachments</h2>
           <p className="section-description">
-            Attach screenshots, logs, or other files that help explain the incident. 
-            Supported formats: images, documents, logs (max 10MB per file).
+            Attach screenshots or images that help explain the incident. 
+            Only image files are supported (JPG, PNG, GIF, etc.) and will be stored in the database.
           </p>
           
           <div className="file-upload-area">
@@ -350,39 +387,48 @@ const IncidentReporting = () => {
               multiple
               onChange={handleFileUpload}
               className="file-input"
-              accept="image/*,.pdf,.doc,.docx,.txt,.log,.json,.xml"
+              accept="image/*"
             />
             <label htmlFor="attachments" className="file-upload-label">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7,10 12,15 17,10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21,15 16,10 5,21" />
               </svg>
-              Choose Files or Drag & Drop
+              Choose Images or Drag & Drop
             </label>
           </div>
 
           {attachments.length > 0 && (
             <div className="attachments-list">
-              <h3>Selected Files:</h3>
-              {attachments.map((file, index) => (
-                <div key={index} className="attachment-item">
-                  <div className="attachment-info">
-                    <span className="attachment-name">{file.name}</span>
-                    <span className="attachment-size">{formatFileSize(file.size)}</span>
+              <h3>Selected Images:</h3>
+              <div className="image-attachments-grid">
+                {attachments.map((attachment, index) => (
+                  <div key={index} className="image-attachment-item">
+                    <div className="image-preview">
+                      <img 
+                        src={attachment.data} 
+                        alt={attachment.name}
+                        className="attachment-thumbnail"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(index)}
+                        className="attachment-remove"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="attachment-info">
+                      <span className="attachment-name">{attachment.name}</span>
+                      <span className="attachment-size">{formatFileSize(attachment.size)}</span>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(index)}
-                    className="attachment-remove"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>

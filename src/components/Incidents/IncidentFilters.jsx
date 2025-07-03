@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './Incidents.css';
 
-const IncidentFilters = ({ filters, onFilterChange, totalCount, filteredCount }) => {
+const IncidentFilters = ({ filters, onFilterChange, totalCount, filteredCount, showHiddenToggle = false }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleFilterChange = (key, value) => {
@@ -18,7 +18,8 @@ const IncidentFilters = ({ filters, onFilterChange, totalCount, filteredCount })
       category: 'all',
       assignee: 'all',
       search: '',
-      dateRange: '30d'
+      dateRange: '30d',
+      showHidden: false
     });
   };
 
@@ -30,6 +31,7 @@ const IncidentFilters = ({ filters, onFilterChange, totalCount, filteredCount })
     if (filters.assignee !== 'all') count++;
     if (filters.search) count++;
     if (filters.dateRange !== '30d') count++;
+    if (filters.showHidden) count++;
     return count;
   };
 
@@ -202,6 +204,20 @@ const IncidentFilters = ({ filters, onFilterChange, totalCount, filteredCount })
               ))}
             </select>
           </div>
+
+          {showHiddenToggle && (
+            <div className="filter-group">
+              <label className="checkbox-filter">
+                <input
+                  type="checkbox"
+                  checked={filters.showHidden}
+                  onChange={(e) => handleFilterChange('showHidden', e.target.checked)}
+                />
+                <span className="checkbox-custom"></span>
+                Show Hidden
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Advanced Filters */}

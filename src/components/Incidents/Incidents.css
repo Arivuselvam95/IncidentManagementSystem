@@ -158,6 +158,50 @@
   color: var(--error-700);
 }
 
+/* Image Attachments */
+.image-attachments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.image-attachment-item {
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: white;
+}
+
+.image-preview {
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+
+.attachment-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-preview .attachment-remove {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-full);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.image-attachment-item .attachment-info {
+  padding: var(--spacing-3);
+}
+
 /* Form Actions */
 .form-actions {
   padding: var(--spacing-6) var(--spacing-8);
@@ -282,6 +326,44 @@
 
 .filter-select {
   font-size: var(--font-size-sm);
+}
+
+.checkbox-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--neutral-700);
+  cursor: pointer;
+}
+
+.checkbox-filter input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--neutral-300);
+  border-radius: var(--radius-sm);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.checkbox-filter input[type="checkbox"]:checked + .checkbox-custom {
+  background-color: var(--primary-600);
+  border-color: var(--primary-600);
+}
+
+.checkbox-filter input[type="checkbox"]:checked + .checkbox-custom::after {
+  content: '✓';
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
 }
 
 .advanced-filters {
@@ -409,11 +491,22 @@
   box-shadow: var(--shadow-lg);
 }
 
+.incident-hidden {
+  opacity: 0.6;
+  background-color: var(--neutral-25);
+}
+
 .incident-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   padding: var(--spacing-4) var(--spacing-4) 0 var(--spacing-4);
+}
+
+.incident-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
 }
 
 .incident-id-section {
@@ -438,12 +531,67 @@
   flex-wrap: wrap;
 }
 
+.badge-hidden {
+  background-color: var(--neutral-200);
+  color: var(--neutral-700);
+}
+
+.incident-menu {
+  position: relative;
+}
+
+.menu-trigger {
+  background: none;
+  border: none;
+  color: var(--neutral-400);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.menu-trigger:hover {
+  color: var(--neutral-600);
+  background-color: var(--neutral-100);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 10;
+  min-width: 120px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: var(--font-size-sm);
+  color: var(--neutral-700);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.menu-item:hover {
+  background-color: var(--neutral-50);
+  color: var(--neutral-900);
+}
+
 .sla-indicator {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
   font-size: var(--font-size-xs);
-  
   font-weight: 600;
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-sm);
@@ -716,7 +864,8 @@
 }
 
 .resolution-form,
-.allocation-form {
+.allocation-form,
+.status-update-form {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-4);
@@ -1013,6 +1162,11 @@
   .meta-item {
     font-size: var(--font-size-xs);
   }
+
+  .image-attachments-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-3);
+  }
 }
 
 @media (max-width: 480px) {
@@ -1056,5 +1210,9 @@
   
   .filters-actions {
     justify-content: space-between;
+  }
+
+  .image-attachments-grid {
+    grid-template-columns: 1fr;
   }
 }
