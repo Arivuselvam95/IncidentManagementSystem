@@ -17,9 +17,9 @@ const attachmentSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  path: {
-    type: String,
-    required: false
+  data: {
+    type: Buffer,
+    required: true
   },
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -80,7 +80,7 @@ const incidentSchema = new mongoose.Schema({
   incidentId: {
     type: String,
     unique: true,
-    required: false
+    required: true
   },
   title: {
     type: String,

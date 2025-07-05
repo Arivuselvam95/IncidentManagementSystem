@@ -38,7 +38,6 @@ const IncidentDetails = () => {
       setLoading(true);
       const response = await incidentsAPI.getById(id);
       setIncident(response.data);
-      // console.log(response.data);
       setEditData(response.data);
     } catch (error) {
       console.error('Error fetching incident:', error);
@@ -108,13 +107,14 @@ const IncidentDetails = () => {
     tags: ['email', 'server', 'critical'],
     attachments: [
       {
+        _id: 'att1',
         filename: 'error-screenshot.png',
-        originalName: 'Email Error Screenshot.png',
-        mimetype: 'image/png',
+        originalName: 'error-screenshot.png',
         size: 245760,
+        mimetype: 'image/png',
         uploadedBy: 'user1',
         uploadedAt: '2024-01-07T09:05:00Z',
-        data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+        base64Data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
       }
     ],
     comments: [
@@ -322,7 +322,7 @@ const IncidentDetails = () => {
                 Edit
               </button>
             )}
-            {canAssign() && incident.status === 'new' && (
+            {canAssign() && (
               <button 
                 onClick={() => setShowAssignModal(true)}
                 className="btn btn-primary btn-sm"
@@ -581,11 +581,12 @@ const IncidentDetails = () => {
                     {incident.attachments.map((attachment, index) => (
                       <div key={index} className="attachment-item">
                         <div className="attachment-icon">
-                          {attachment.mimetype?.startsWith('image/') ? (
+                          {attachment.base64Data ? (
                             <img 
-                              src={attachment.data} 
+                              src={attachment.base64Data} 
                               alt={attachment.originalName}
                               className="attachment-thumbnail"
+                              style={{ width: '300px', height: '300px', objectFit: 'cover', borderRadius: '4px' }}
                             />
                           ) : (
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -599,7 +600,44 @@ const IncidentDetails = () => {
                             {formatFileSize(attachment.size)} • Uploaded {formatTime(attachment.uploadedAt)}
                           </div>
                         </div>
-                        <button className="btn btn-outline btn-sm">View</button>
+                        <div className="attachment-actions">
+                          {attachment.base64Data && (
+                            <>
+                              <button 
+                                onClick={() => {
+                                  const newWindow = window.open();
+                                  if (newWindow) {
+                                    newWindow.document.write(`
+                                      <html>
+                                        <head><title>${attachment.originalName}</title></head>
+                                        <body style="margin:0">
+                                          <img src="${attachment.base64Data}" alt="${attachment.originalName}" style="max-width:100vw; max-height:100vh; object-fit:contain;" />
+                                        </body>
+                                      </html>
+                                      
+                                    `);
+                                    newWindow.document.close();
+                                  }
+
+                                }}
+                                className="btn btn-outline btn-sm"
+                              >
+                                View
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = attachment.base64Data;
+                                  link.download = attachment.originalName;
+                                  link.click();
+                                }}
+                                className="btn btn-outline btn-sm"
+                              >
+                                Download
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -8,6 +8,7 @@ const IncidentReporting = () => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotifications();
   const [loading, setLoading] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [attachments, setAttachments] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -76,43 +77,41 @@ const IncidentReporting = () => {
       return;
     }
 
-    // Convert images to base64 for database storage
-    const processFiles = async () => {
-      const processedFiles = [];
-      
-      for (const file of imageFiles) {
-        try {
-          const base64 = await convertToBase64(file);
-          processedFiles.push({
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            data: base64,
-            file: file // Keep original file for preview
-          });
-        } catch (error) {
-          console.error('Error converting file to base64:', error);
-          showError(`Failed to process ${file.name}`);
-        }
-      }
-      
-      setAttachments(prev => [...prev, ...processedFiles]);
-    };
+    if (imageFiles.length === 0) {
+      return;
+    }
 
-    processFiles();
-  };
-
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
+    setUploadingImages(true);
+    
+    try {
+      // Create preview URLs for selected images
+      const newAttachments = imageFiles.map(file => ({
+        file: file,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        previewUrl: URL.createObjectURL(file)
+      }));
+      
+      setAttachments(prev => [...prev, ...newAttachments]);
+      showSuccess(`Selected ${imageFiles.length} image(s) for upload`);
+    } catch (error) {
+      console.error('Error processing images:', error);
+      showError('Failed to process selected images');
+    } finally {
+      setUploadingImages(false);
+    }
   };
 
   const removeAttachment = (index) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      // Revoke the object URL to free memory
+      if (prev[index]?.previewUrl) {
+        URL.revokeObjectURL(prev[index].previewUrl);
+      }
+      return updated;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -120,21 +119,22 @@ const IncidentReporting = () => {
     setLoading(true);
 
     try {
-      // Prepare incident data with base64 images
-      const incidentData = {
-        ...formData,
-        reporterId: user.id,
-        reporterName: `${user.firstName} ${user.lastName}`,
-        reporterEmail: user.email,
-        attachments: attachments.map(att => ({
-          name: att.name,
-          type: att.type,
-          size: att.size,
-          data: att.data
-        }))
-      };
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      
+      // Add form fields
+      Object.keys(formData).forEach(key => {
+        if (formData[key]) {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
 
-      const response = await incidentsAPI.create(incidentData);
+      // Add files
+      attachments.forEach(attachment => {
+        formDataToSend.append('attachments', attachment.file);
+      });
+
+      const response = await incidentsAPI.create(formDataToSend);
       
       if (response.data) {
         showSuccess(`Incident ${response.data.incidentId} has been created successfully`);
@@ -151,6 +151,13 @@ const IncidentReporting = () => {
           actualBehavior: '',
           urgency: 'medium',
           impact: 'medium'
+        });
+        
+        // Clean up attachments
+        attachments.forEach(att => {
+          if (att.previewUrl) {
+            URL.revokeObjectURL(att.previewUrl);
+          }
         });
         setAttachments([]);
         
@@ -377,9 +384,9 @@ const IncidentReporting = () => {
           <h2>Image Attachments</h2>
           <p className="section-description">
             Attach screenshots or images that help explain the incident. 
-            Only image files are supported (JPG, PNG, GIF, etc.) and will be stored in the database.
+            Images will be stored securely in the database.
           </p>
-          
+
           <div className="file-upload-area">
             <input
               type="file"
@@ -388,6 +395,7 @@ const IncidentReporting = () => {
               onChange={handleFileUpload}
               className="file-input"
               accept="image/*"
+              disabled={uploadingImages}
             />
             <label htmlFor="attachments" className="file-upload-label">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -395,9 +403,16 @@ const IncidentReporting = () => {
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21,15 16,10 5,21" />
               </svg>
-              Choose Images or Drag & Drop
+              {uploadingImages ? 'Processing Images...' : 'Choose Images or Drag & Drop'}
             </label>
           </div>
+
+          {uploadingImages && (
+            <div className="upload-progress">
+              <div className="spinner"></div>
+              <span>Processing selected images...</span>
+            </div>
+          )}
 
           {attachments.length > 0 && (
             <div className="attachments-list">
@@ -407,7 +422,7 @@ const IncidentReporting = () => {
                   <div key={index} className="image-attachment-item">
                     <div className="image-preview">
                       <img 
-                        src={attachment.data} 
+                        src={attachment.previewUrl} 
                         alt={attachment.name}
                         className="attachment-thumbnail"
                       />
@@ -436,7 +451,7 @@ const IncidentReporting = () => {
         <div className="form-actions">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || uploadingImages}
             className="btn btn-primary btn-lg"
           >
             {loading ? (

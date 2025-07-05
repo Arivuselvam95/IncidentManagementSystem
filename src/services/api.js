@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'https://5hddn4g1-5000.inc1.devtunnels.ms/api',
   timeout: 10000,
 });
 
@@ -103,5 +103,17 @@ export const analyticsAPI = {
       responseType: 'blob'
     }),
 };
+
+// New helper function (in utils or similar)
+export const fetchAttachmentBlob = async (incidentId, attachmentId, token) => {
+  const response = await fetch(`http://localhost:5000/api/incidents/${incidentId}/attachments/${attachmentId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error('Failed to fetch attachment');
+  return await response.blob();
+};
+
 
 export default api;

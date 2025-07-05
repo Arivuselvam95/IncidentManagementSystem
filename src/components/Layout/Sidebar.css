@@ -173,13 +173,14 @@
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .sidebar {
-    transform: translateX(-100%);
+    /* transform: translateX(-100%); */
     width: 280px;
   }
 
   .sidebar.collapsed {
-    transform: translateX(-100%);
-    width: 280px;
+    /* transform: translateX(-100%); */
+    width: 0px;
+
   }
 
   .sidebar.mobile-open {
