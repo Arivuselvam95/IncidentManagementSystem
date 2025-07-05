@@ -17,7 +17,7 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Access denied. Invalid token.' });
     }
 
-    req.userId = decoded.userId;
+    req.userId = decoded.userId;   
     req.user = user;
     next();
   } catch (error) {

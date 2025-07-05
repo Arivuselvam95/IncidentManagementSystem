@@ -12,6 +12,7 @@ import IncidentDetails from './components/Incidents/IncidentDetails';
 import IncidentResolving from './components/Incidents/IncidentResolving';
 import IncidentAllocation from './components/Incidents/IncidentAllocation';
 import Profile from './components/Profile/Profile';
+
 import './App.css';
 
 function App() {

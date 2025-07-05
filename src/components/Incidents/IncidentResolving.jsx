@@ -32,61 +32,21 @@ const IncidentResolving = () => {
     try {
       setLoading(true);
       // Fetch only incidents assigned to the current user
-      const all = await incidentsAPI.getAll({ assigneeId: user.id });
-      console.log(all.data.incidents);
-      const incidents = all.data.incidents.filter(i =>
+      const all1 = await incidentsAPI.getAll({ assigneeId: user._id });
+      // console.log('Fetched incidents:', all1.data.incidents," user:", user,"assignee:", all1.data.incidents.map(i => i.assignee.user._id));
+      const all=all1.data.incidents.filter(i => i.assignee && i.assignee.user._id === user._id);
+      // console.log(all.data.incidents);
+      const incidents = all.filter(i =>
         ['assigned', 'in-progress','pending'].includes(i.status)
       );
       setIncidents(incidents);
     } catch (error) {
       console.error('Error fetching incidents:', error);
-      // Use mock data for demonstration - filter by assigned user
-      const mockData = getMockIncidents().filter(incident => 
-        incident.assignee && incident.assignee.id === user.id
-      );
-      setIncidents(mockData);
     } finally {
       setLoading(false);
     }
   };
 
-  const getMockIncidents = () => [
-    {
-      id: 'INC-001',
-      title: 'Email server connectivity issues',
-      description: 'Users unable to send/receive emails since 9:00 AM',
-      severity: 'critical',
-      status: 'in-progress',
-      category: 'Email & Communication',
-      assignee: { name: user?.firstName + ' ' + user?.lastName, id: user?.id },
-      reporter: { name: 'Alice Smith', email: 'alice@company.com' },
-      createdAt: '2024-01-07T09:00:00Z',
-      updatedAt: '2024-01-07T09:30:00Z',
-      slaTarget: '2024-01-07T10:00:00Z',
-      affectedServices: 'Exchange Server, Outlook',
-      workLogs: [
-        { timestamp: '2024-01-07T09:30:00Z', action: 'Investigating email server connectivity', user: 'John Doe' },
-        { timestamp: '2024-01-07T10:15:00Z', action: 'Identified network configuration issue', user: 'John Doe' }
-      ]
-    },
-    {
-      id: 'INC-002',
-      title: 'Database connection timeout',
-      description: 'CRM system unable to connect to database intermittently',
-      severity: 'high',
-      status: 'assigned',
-      category: 'Database & Storage',
-      assignee: { name: user?.firstName + ' ' + user?.lastName, id: user?.id },
-      reporter: { name: 'Bob Johnson', email: 'bob@company.com' },
-      createdAt: '2024-01-07T08:30:00Z',
-      updatedAt: '2024-01-07T10:15:00Z',
-      slaTarget: '2024-01-07T12:30:00Z',
-      affectedServices: 'CRM Database, Customer Portal',
-      workLogs: [
-        { timestamp: '2024-01-07T10:15:00Z', action: 'Assigned to database team', user: 'System' }
-      ]
-    }
-  ];
 
   const resolutionCategories = [
     'Configuration Change',

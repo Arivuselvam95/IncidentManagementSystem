@@ -1,39 +1,26 @@
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import Incident from '../models/Incident.js';
 import User from '../models/User.js';
 import auth from '../middleware/auth.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for memory storage (to handle files as buffers)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|log|json|xml/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(file.originalname.toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
 
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error('Only image files are allowed'));
     }
   }
 });
@@ -73,6 +60,8 @@ router.get('/', auth, async (req, res) => {
     if (assignee && assignee !== 'all') {
       if (assignee === 'me') {
         filter['assignee.user'] = req.userId;
+      } else if (assignee === 'unassigned') {
+        filter['assignee.user'] = { $exists: false };
       } else {
         filter['assignee.user'] = assignee;
       }
@@ -98,10 +87,11 @@ router.get('/', auth, async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    // Execute query with pagination
+    // Execute query with pagination (exclude attachment data for list view)
     const incidents = await Incident.find(filter)
       .populate('reporter.user', 'firstName lastName email')
       .populate('assignee.user', 'firstName lastName email')
+      .select('-attachments.data -comments.attachments.data') // Exclude binary data
       .sort(sort)
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -122,7 +112,7 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Get incident by ID
+// Get incident by ID with full attachment data (including base64 images)
 router.get('/:id', auth, async (req, res) => {
   try {
     const incident = await Incident.findOne({
@@ -140,12 +130,34 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Incident not found' });
     }
 
+    // Convert attachment binary data to base64 for easy display
+    const incidentWithBase64Images = incident.toObject();
+    
+    if (incidentWithBase64Images.attachments) {
+      incidentWithBase64Images.attachments = incidentWithBase64Images.attachments.map(attachment => ({
+        ...attachment,
+        data: undefined, // Remove binary data
+        base64Data: attachment.data ? `data:${attachment.mimetype};base64,${attachment.data.toString('base64')}` : null
+      }));
+    }
+
+    if (incidentWithBase64Images.comments) {
+      incidentWithBase64Images.comments = incidentWithBase64Images.comments.map(comment => ({
+        ...comment,
+        attachments: comment.attachments ? comment.attachments.map(attachment => ({
+          ...attachment,
+          data: undefined, // Remove binary data
+          base64Data: attachment.data ? `data:${attachment.mimetype};base64,${attachment.data.toString('base64')}` : null
+        })) : []
+      }));
+    }
+
     // Update view count and last viewed
     incident.metrics.viewCount += 1;
     incident.metrics.lastViewedAt = new Date();
     await incident.save();
 
-    res.json(incident);
+    res.json(incidentWithBase64Images);
   } catch (error) {
     console.error('Error fetching incident:', error);
     res.status(500).json({ message: 'Error fetching incident' });
@@ -173,17 +185,17 @@ router.post('/', auth, upload.array('attachments', 10), async (req, res) => {
     if (!reporter) {
       return res.status(404).json({ message: 'Reporter not found' });
     }
-    console.log(req.files);
+
     // Process attachments
     const attachments = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         attachments.push({
-          filename: file.filename,
+          filename: `${Date.now()}_${file.originalname}`,
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          path: file.path,
+          data: file.buffer,
           uploadedBy: req.userId
         });
       }
@@ -201,7 +213,12 @@ router.post('/', auth, upload.array('attachments', 10), async (req, res) => {
     slaTarget.setHours(slaTarget.getHours() + slaHours[severity]);
 
     // Create incident
+    
+    const count = await Incident.countDocuments();
+    const incidentId = `INC-${String(count + 1).padStart(4, '0')}`;
+
     const incident = new Incident({
+      incidentId,
       title,
       description,
       severity,
@@ -236,10 +253,22 @@ router.post('/', auth, upload.array('attachments', 10), async (req, res) => {
 
     await incident.save();
 
+    // Return response without binary data
+    const responseIncident = incident.toObject();
+    responseIncident.attachments = responseIncident.attachments.map(att => ({
+      _id: att._id,
+      filename: att.filename,
+      originalName: att.originalName,
+      mimetype: att.mimetype,
+      size: att.size,
+      uploadedBy: att.uploadedBy,
+      uploadedAt: att.uploadedAt
+    }));
+
     res.status(201).json({
       message: 'Incident created successfully',
-      incident,
-      incidentId: incident.incidentId
+      incident: responseIncident,
+      incidentId: incident.incidentId 
     });
   } catch (error) {
     console.error('Error creating incident:', error);
@@ -265,7 +294,7 @@ router.put('/:id', auth, async (req, res) => {
     const allowedUpdates = [
       'title', 'description', 'severity', 'category', 'urgency', 'impact',
       'affectedServices', 'stepsToReproduce', 'expectedBehavior', 'actualBehavior',
-      'status', 'workaround', 'tags'
+      'status', 'workaround', 'tags', 'isHidden'
     ];
 
     allowedUpdates.forEach(field => {
@@ -396,9 +425,9 @@ router.put('/:id/resolve', auth, async (req, res) => {
 });
 
 // Add comment to incident
-router.post('/:id/comments', auth, async (req, res) => {
+router.post('/:id/comments', auth, upload.array('attachments', 5), async (req, res) => {
   try {
-    const { comment, isInternal = false } = req.body;
+    const { comment, isInternal = false } = req.body.comment;
 
     const incident = await Incident.findOne({
       $or: [
@@ -411,10 +440,26 @@ router.post('/:id/comments', auth, async (req, res) => {
       return res.status(404).json({ message: 'Incident not found' });
     }
 
+    // Process comment attachments
+    const attachments = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        attachments.push({
+          filename: `${Date.now()}_${file.originalname}`,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          data: file.buffer,
+          uploadedBy: req.userId
+        });
+      }
+    }
+
     incident.comments.push({
       text: comment,
       author: req.userId,
-      isInternal
+      isInternal: isInternal === 'true',
+      attachments
     });
 
     await incident.save();
@@ -473,16 +518,24 @@ router.post('/:id/attachments', auth, upload.array('attachments', 5), async (req
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const attachment = {
-          filename: file.filename,
+          filename: `${Date.now()}_${file.originalname}`,
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          path: file.path,
+          data: file.buffer,
           uploadedBy: req.userId
         };
         
         incident.attachments.push(attachment);
-        attachments.push(attachment);
+        attachments.push({
+          _id: incident.attachments[incident.attachments.length - 1]._id,
+          filename: attachment.filename,
+          originalName: attachment.originalName,
+          mimetype: attachment.mimetype,
+          size: attachment.size,
+          uploadedBy: attachment.uploadedBy,
+          uploadedAt: attachment.uploadedAt
+        });
       }
     }
 

@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const { user } = useAuth();
   const location = useLocation();
 
