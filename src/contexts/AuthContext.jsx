@@ -106,7 +106,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
-    setError
+    setError,
+    setUser
   };
 
   return (

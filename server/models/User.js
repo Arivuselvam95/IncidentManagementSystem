@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
+  googleId: {
+    type: String,
+    sparse: true // Allows null values but ensures uniqueness when present
+  },
   firstName: {
     type: String,
     required: true,
@@ -89,7 +93,7 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password before saving
+// Hash password before saving (only if password is modified and not a Google user)
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   

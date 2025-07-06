@@ -4,6 +4,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import AuthCallback from './components/Auth/AuthCallback';
 import Layout from './components/Layout/Layout';
 import Dashboard from './components/Dashboard/Dashboard';
 import IncidentReporting from './components/Incidents/IncidentReporting';
@@ -12,7 +13,6 @@ import IncidentDetails from './components/Incidents/IncidentDetails';
 import IncidentResolving from './components/Incidents/IncidentResolving';
 import IncidentAllocation from './components/Incidents/IncidentAllocation';
 import Profile from './components/Profile/Profile';
-
 import './App.css';
 
 function App() {
@@ -24,6 +24,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />

@@ -45,10 +45,10 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => [newNotification, ...prev]);
 
     // Auto remove after 5 seconds for success notifications
-    if (notification.type === 'success') {
+    if (notification.type === 'success' || notification.type === 'info') {
       setTimeout(() => {
         removeNotification(id);
-      }, 5000);
+      }, 7500);
     }
   };
 

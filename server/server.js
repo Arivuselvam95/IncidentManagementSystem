@@ -7,6 +7,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import http from 'http';
+import session from 'express-session';
+import passport from './config/passport.js';
 import { Server as SocketIOServer } from 'socket.io';
 
 // For __dirname in ES module
@@ -16,6 +18,7 @@ const __dirname = path.dirname(__filename);
 // Load environment variables
 dotenv.config();
 
+console.log("🔐 GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -35,7 +38,19 @@ const io = new SocketIOServer(server, {
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Increase to 10MB or as needed
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');

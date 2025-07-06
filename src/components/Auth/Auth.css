@@ -66,6 +66,59 @@
   margin-top: var(--spacing-1);
 }
 
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: var(--spacing-6) 0;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--neutral-200);
+}
+
+.auth-divider span {
+  background: white;
+  padding: 0 var(--spacing-4);
+  color: var(--neutral-500);
+  font-size: var(--font-size-sm);
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: white;
+  border: 1px solid var(--neutral-300);
+  color: var(--neutral-700);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.btn-google:hover:not(:disabled) {
+  background-color: var(--neutral-50);
+  border-color: var(--neutral-400);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .auth-footer {
   text-align: center;
   padding-top: var(--spacing-6);

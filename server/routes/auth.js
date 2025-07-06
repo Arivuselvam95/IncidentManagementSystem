@@ -1,9 +1,39 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import passport from '../config/passport.js';
 import User from '../models/User.js';
 import auth from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Google OAuth routes
+router.get('/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get('/google/callback',
+  passport.authenticate('google', { session: false }),
+  async (req, res) => {
+    try {
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: req.user._id },
+        process.env.JWT_SECRET || 'fallback-secret',
+        { expiresIn: '7d' }
+      );
+
+      // Update last login
+      req.user.lastLogin = new Date();
+      await req.user.save();
+
+      // Redirect to frontend with token
+      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}`);
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=oauth_failed`);
+    }
+  }
+);
 
 // Register
 router.post('/register', async (req, res) => {
@@ -155,6 +185,11 @@ router.put('/change-password', auth, async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user has Google ID (Google users can't change password this way)
+    if (user.googleId) {
+      return res.status(400).json({ message: 'Google users cannot change password. Please use Google account settings.' });
     }
 
     // Verify current password

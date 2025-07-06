@@ -29,7 +29,8 @@ const IncidentDetails = () => {
   useEffect(() => {
     if (id) {
       fetchIncident();
-      fetchTeamMembers();
+      if(user.role === 'admin' || user.role === 'team-lead' )
+        fetchTeamMembers();
     }
   }, [id]);
 
@@ -54,106 +55,14 @@ const IncidentDetails = () => {
   const fetchTeamMembers = async () => {
     try {
       const response = await usersAPI.getTeamMembers();
+      // console.log('Fetched team members:', response.data);
       setTeamMembers(response.data);
     } catch (error) {
       console.error('Error fetching team members:', error);
-      // Mock team members
-      setTeamMembers([
-        { id: 'user1', firstName: 'John', lastName: 'Doe', role: 'it-support' },
-        { id: 'user2', firstName: 'Jane', lastName: 'Smith', role: 'it-support' },
-        { id: 'user3', firstName: 'Mike', lastName: 'Johnson', role: 'team-lead' }
-      ]);
+      
     }
   };
 
-  const getMockIncident = () => ({
-    _id: id,
-    incidentId: 'INC-001',
-    title: 'Email server connectivity issues',
-    description: 'Users unable to send/receive emails since 9:00 AM. The issue appears to be affecting the entire organization with multiple departments reporting email outages.',
-    severity: 'critical',
-    status: 'in-progress',
-    category: 'Email & Communication',
-    urgency: 'high',
-    impact: 'high',
-    priority: 'critical',
-    reporter: {
-      user: 'user1',
-      name: 'Alice Smith',
-      email: 'alice@company.com',
-      phone: '+1-555-0123'
-    },
-    assignee: {
-      user: 'user2',
-      name: 'John Doe',
-      assignedAt: '2024-01-07T09:30:00Z',
-      assignedBy: 'user3'
-    },
-    affectedServices: 'Exchange Server, Outlook, Mobile Email',
-    stepsToReproduce: '1. Open Outlook\n2. Try to send an email\n3. Email gets stuck in outbox\n4. Receiving emails also fails',
-    expectedBehavior: 'Emails should send and receive normally',
-    actualBehavior: 'Emails are not being sent or received',
-    workaround: 'Use web-based email temporarily',
-    resolution: null,
-    sla: {
-      target: '2024-01-07T10:00:00Z',
-      firstResponseTarget: '2024-01-07T09:15:00Z',
-      firstResponseAt: '2024-01-07T09:12:00Z',
-      isBreached: false
-    },
-    createdAt: '2024-01-07T09:00:00Z',
-    updatedAt: '2024-01-07T11:30:00Z',
-    acknowledgedAt: '2024-01-07T09:12:00Z',
-    tags: ['email', 'server', 'critical'],
-    attachments: [
-      {
-        _id: 'att1',
-        filename: 'error-screenshot.png',
-        originalName: 'error-screenshot.png',
-        size: 245760,
-        mimetype: 'image/png',
-        uploadedBy: 'user1',
-        uploadedAt: '2024-01-07T09:05:00Z',
-        base64Data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
-      }
-    ],
-    comments: [
-      {
-        _id: 'comment1',
-        text: 'Initial investigation shows Exchange server is responding but mail flow is blocked.',
-        author: { firstName: 'John', lastName: 'Doe' },
-        isInternal: false,
-        createdAt: '2024-01-07T09:45:00Z'
-      },
-      {
-        _id: 'comment2',
-        text: 'Found the issue - mail connector configuration was changed during last night\'s maintenance.',
-        author: { firstName: 'John', lastName: 'Doe' },
-        isInternal: true,
-        createdAt: '2024-01-07T10:30:00Z'
-      }
-    ],
-    workLogs: [
-      {
-        _id: 'log1',
-        action: 'Incident created',
-        description: 'Incident reported by Alice Smith',
-        user: { firstName: 'System', lastName: '' },
-        timeSpent: 0,
-        isSystemGenerated: true,
-        createdAt: '2024-01-07T09:00:00Z'
-      },
-      {
-        _id: 'log2',
-        action: 'Assigned to John Doe',
-        description: 'Critical email issue requires immediate attention',
-        user: { firstName: 'Admin', lastName: 'User' },
-        timeSpent: 0,
-        isSystemGenerated: false,
-        createdAt: '2024-01-07T09:30:00Z'
-      }
-    ]
-  });
 
   const handleAddComment = async (e) => {
     e.preventDefault();
@@ -222,7 +131,7 @@ const IncidentDetails = () => {
   };
 
   const canAssign = () => {
-    return user?.role === 'admin' || user?.role === 'team-lead';
+    return (user?.role === 'admin' || user?.role === 'team-lead') && (incident?.status === 'new' || incident?.status === 'in-progress');
   };
 
   const formatTime = (dateString) => {
@@ -322,7 +231,7 @@ const IncidentDetails = () => {
                 Edit
               </button>
             )}
-            {canAssign() && (
+            {canAssign() &&  (
               <button 
                 onClick={() => setShowAssignModal(true)}
                 className="btn btn-primary btn-sm"
