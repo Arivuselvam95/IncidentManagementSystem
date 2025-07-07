@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 // Load environment variables
 dotenv.config();
 
-console.log("🔐 GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
+// console.log("🔐 GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
 const app = express();
 const PORT = process.env.PORT || 5000;
 

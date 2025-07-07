@@ -12,6 +12,7 @@ import IncidentStatus from './components/Incidents/IncidentStatus';
 import IncidentDetails from './components/Incidents/IncidentDetails';
 import IncidentResolving from './components/Incidents/IncidentResolving';
 import IncidentAllocation from './components/Incidents/IncidentAllocation';
+import UserManagement from './components/Users/UserManagement';
 import Profile from './components/Profile/Profile';
 import './App.css';
 
@@ -33,6 +34,7 @@ function App() {
                 <Route path="incidents/:id" element={<IncidentDetails />} />
                 <Route path="incidents/resolve" element={<IncidentResolving />} />
                 <Route path="incidents/allocate" element={<IncidentAllocation />} />
+                <Route path="users/manage" element={<UserManagement />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
             </Routes>

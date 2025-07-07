@@ -3,6 +3,9 @@ import jwt from 'jsonwebtoken';
 import passport from '../config/passport.js';
 import User from '../models/User.js';
 import auth from '../middleware/auth.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const router = express.Router();
 

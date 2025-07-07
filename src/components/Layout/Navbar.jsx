@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import NotificationDropdown from '../Notifications/NotificationDropdown';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -8,8 +9,27 @@ const Navbar = () => {
   const { notifications } = useNotifications();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -29,10 +49,13 @@ const Navbar = () => {
 
       <div className="navbar-actions">
         {/* Notifications */}
-        <div className="navbar-item">
+        <div className="navbar-item" ref={notificationRef}>
           <button
             className="notification-btn"
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              setShowUserMenu(false);
+            }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -42,14 +65,21 @@ const Navbar = () => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </button>
+          
+          {showNotifications && (
+            <NotificationDropdown onClose={() => setShowNotifications(false)} />
+          )}
         </div>
 
         {/* User Menu */}
-        <div className="navbar-item">
+        <div className="navbar-item" ref={userMenuRef}>
           <div className="user-menu">
             <button
               className="user-avatar"
-              onClick={() => setShowUserMenu(!showUserMenu)}
+              onClick={() => {
+                setShowUserMenu(!showUserMenu);
+                setShowNotifications(false);
+              }}
             >
               {getUserInitials()}
             </button>
@@ -75,6 +105,16 @@ const Navbar = () => {
                   </svg>
                   Profile & Settings
                 </a>
+                {(user?.role === 'admin' || user?.role === 'team-lead') && (
+                  <a href="/users/manage" className="dropdown-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Manage Users
+                  </a>
+                )}
                 <button className="dropdown-item" onClick={handleLogout}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

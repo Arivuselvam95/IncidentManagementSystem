@@ -135,10 +135,11 @@ router.get('/:id', auth, async (req, res) => {
 // Update user (admin only, or user updating their own profile)
 router.put('/:id', auth, async (req, res) => {
   try {
+    console.log('Updating user:', req.params.id, 'by', req.userId);
     const currentUser = await User.findById(req.userId);
     
     // Users can update their own profile, admins can update any profile
-    if (req.params.id !== req.userId && currentUser.role !== 'admin') {
+    if (req.params.id !== req.userId && (currentUser.role !== 'admin' && currentUser.role !== 'team-lead')) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -152,7 +153,7 @@ router.put('/:id', auth, async (req, res) => {
     const adminOnlyUpdates = ['email', 'role', 'department', 'isActive', 'expertise', 'maxWorkload'];
 
     // Regular users can only update basic profile fields
-    const updatableFields = currentUser.role === 'admin' 
+    const updatableFields =( currentUser.role === 'admin' )
       ? [...allowedUpdates, ...adminOnlyUpdates]
       : allowedUpdates;
 

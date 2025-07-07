@@ -5,7 +5,7 @@ import User from '../models/User.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-callbackURL: "/api/auth/google/callback"
+
 
 // Compute __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -14,7 +14,6 @@ const __dirname = path.dirname(__filename);
 // Point to the actual location of .env at project root
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-console.log('Initializing Google OAuth strategy...' ,process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
