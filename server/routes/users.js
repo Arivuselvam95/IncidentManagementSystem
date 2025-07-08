@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Incident from '../models/Incident.js';
 import auth from '../middleware/auth.js';
+import RegistrationRequest from '../models/RegistrationRequest.js';
 
 const router = express.Router();
 
@@ -65,6 +66,117 @@ router.get('/team-members', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching team members:', error);
     res.status(500).json({ message: 'Error fetching team members' });
+  }
+});
+
+// Get registration requests
+router.get('/registration-requests', auth, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.userId);
+    if (!['admin', 'team-lead'].includes(currentUser.role)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const requests = await RegistrationRequest.find({ status: 'pending' })
+      .sort({ requestedAt: -1 });
+
+    res.json(requests);
+  } catch (error) {
+    console.error('Error fetching registration requests:', error);
+    res.status(500).json({ message: 'Error fetching registration requests' });
+  }
+});
+
+// Approve registration request
+router.put('/registration-requests/:id/approve', auth, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.userId);
+    if (!['admin', 'team-lead'].includes(currentUser.role)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const request = await RegistrationRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: 'Registration request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'Request has already been processed' });
+    }
+
+    // Check if team lead is trying to approve admin/team-lead role
+    if (currentUser.role === 'team-lead' && ['admin', 'team-lead'].includes(request.role)) {
+      return res.status(403).json({ message: 'Team leads can only approve IT Support registrations' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: request.email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Create user from registration request
+    const user = new User({
+      firstName: request.firstName,
+      lastName: request.lastName,
+      email: request.email,
+      password: request.password, // Already hashed
+      role: request.role,
+      department: request.department,
+      googleId: request.googleId, // If from Google OAuth
+      isActive: true
+    });
+
+    await user.save();
+
+    // Update registration request status
+    request.status = 'approved';
+    request.processedAt = new Date();
+    request.processedBy = req.userId;
+    await request.save();
+
+    res.json({
+      message: 'Registration request approved successfully',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Error approving registration request:', error);
+    res.status(500).json({ message: 'Error approving registration request' });
+  }
+});
+
+// Reject registration request
+router.put('/registration-requests/:id/reject', auth, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.userId);
+    if (!['admin', 'team-lead'].includes(currentUser.role)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const { rejectionReason } = req.body;
+
+    const request = await RegistrationRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: 'Registration request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'Request has already been processed' });
+    }
+
+    // Update registration request status
+    request.status = 'rejected';
+    request.processedAt = new Date();
+    request.processedBy = req.userId;
+    request.rejectionReason = rejectionReason;
+    await request.save();
+
+    res.json({
+      message: 'Registration request rejected successfully'
+    });
+  } catch (error) {
+    console.error('Error rejecting registration request:', error);
+    res.status(500).json({ message: 'Error rejecting registration request' });
   }
 });
 

@@ -44,6 +44,12 @@ const Sidebar = () => {
       href: '/users/manage',
       icon: 'M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
       roles: ['team-lead', 'admin']
+    },
+    {
+      name: 'Registration Requests',
+      href: '/users/requests',
+      icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M9 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+      roles: ['team-lead', 'admin']
     }
   ];
 

@@ -1,11 +1,10 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import passport from '../config/passport.js';
 import User from '../models/User.js';
+import RegistrationRequest from '../models/RegistrationRequest.js';
 import auth from '../middleware/auth.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const router = express.Router();
 
@@ -38,7 +37,7 @@ router.get('/google/callback',
   }
 );
 
-// Register
+// Register (for reporters only - direct registration)
 router.post('/register', async (req, res) => {
   try {
     const { firstName, lastName, email, password, department, role } = req.body;
@@ -49,14 +48,25 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Create new user
+    // Check if there's a pending registration request
+    const existingRequest = await RegistrationRequest.findOne({ email });
+    if (existingRequest) {
+      return res.status(400).json({ message: 'Registration request already exists for this email' });
+    }
+
+    // Only allow direct registration for reporters
+    if (role !== 'reporter') {
+      return res.status(400).json({ message: 'IT team registrations require approval. Please use the registration request process.' });
+    }
+
+    // Create new user (reporter)
     const user = new User({
       firstName,
       lastName,
       email,
       password,
       department,
-      role: role || 'reporter'
+      role: 'reporter'
     });
 
     await user.save();
@@ -76,6 +86,57 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Error creating user', error: error.message });
+  }
+});
+
+// Submit registration request (for IT team members)
+router.post('/registration-request', async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, department, role } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Check if there's already a pending request
+    const existingRequest = await RegistrationRequest.findOne({ 
+      email, 
+      status: 'pending' 
+    });
+    if (existingRequest) {
+      return res.status(400).json({ message: 'Registration request already pending for this email' });
+    }
+
+    // Only allow IT roles for registration requests
+    if (!['it-support', 'team-lead', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role for registration request' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create registration request
+    const registrationRequest = new RegistrationRequest({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      department,
+      role
+    });
+
+    await registrationRequest.save();
+
+    res.status(201).json({
+      message: 'Registration request submitted successfully',
+      requestId: registrationRequest._id
+    });
+  } catch (error) {
+    console.error('Registration request error:', error);
+    res.status(500).json({ message: 'Error submitting registration request', error: error.message });
   }
 });
 

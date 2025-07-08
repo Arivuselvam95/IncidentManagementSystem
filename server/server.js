@@ -35,7 +35,10 @@ const io = new SocketIOServer(server, {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // ✅ Allow only your frontend
+  credentials: true               // ✅ Allow cookies/session headers
+}));
 app.use(express.json({ limit: '10mb' })); // Increase to 10MB or as needed
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(session({
@@ -90,7 +93,7 @@ const upload = multer({
 });
 
 // MongoDB connection
-const MONGODB_URI = `mongodb+srv://arivuselvam439:ari952005@cluster0.srvel.mongodb.net/Users2`;
+const MONGODB_URI = process.env.MONGODB_URI ;
 
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import NotificationDropdown from '../Notifications/NotificationDropdown';
@@ -33,6 +34,10 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
+    setShowUserMenu(false);
+  };
+
+  const handleMenuItemClick = () => {
     setShowUserMenu(false);
   };
 
@@ -98,22 +103,44 @@ const Navbar = () => {
                   </div>
                 </div>
                 <div className="dropdown-divider"></div>
-                <a href="/profile" className="dropdown-item">
+                <Link 
+                  to="/profile" 
+                  className="dropdown-item"
+                  onClick={handleMenuItemClick}
+                >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                   Profile & Settings
-                </a>
+                </Link>
                 {(user?.role === 'admin' || user?.role === 'team-lead') && (
-                  <a href="/users/manage" className="dropdown-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                    Manage Users
-                  </a>
+                  <>
+                    <Link 
+                      to="/users/manage" 
+                      className="dropdown-item"
+                      onClick={handleMenuItemClick}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      Manage Users
+                    </Link>
+                    <Link 
+                      to="/users/requests" 
+                      className="dropdown-item"
+                      onClick={handleMenuItemClick}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      Registration Requests
+                    </Link>
+                  </>
                 )}
                 <button className="dropdown-item" onClick={handleLogout}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

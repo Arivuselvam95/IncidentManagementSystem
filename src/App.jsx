@@ -15,6 +15,7 @@ import IncidentAllocation from './components/Incidents/IncidentAllocation';
 import UserManagement from './components/Users/UserManagement';
 import Profile from './components/Profile/Profile';
 import './App.css';
+import RegistrationRequests from './components/Users/RegistrationRequests';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
                 <Route path="incidents/resolve" element={<IncidentResolving />} />
                 <Route path="incidents/allocate" element={<IncidentAllocation />} />
                 <Route path="users/manage" element={<UserManagement />} />
+                <Route path="users/requests" element={<RegistrationRequests />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
             </Routes>

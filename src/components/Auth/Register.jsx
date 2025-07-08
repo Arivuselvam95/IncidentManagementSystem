@@ -16,6 +16,7 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const { user, register, error, setError } = useAuth();
 
   if (user) {
@@ -34,7 +35,7 @@ const Register = () => {
   ];
 
   const roles = [
-    { value: 'reporter', label: 'Reporter' },
+    { value: 'reporter', label: 'Reporter (End User)' },
     { value: 'it-support', label: 'IT Support' },
     { value: 'team-lead', label: 'Team Lead' },
     { value: 'admin', label: 'Administrator' }
@@ -102,10 +103,26 @@ const Register = () => {
 
     setLoading(true);
 
-    const { confirmPassword, ...userData } = formData;
-    const result = await register(userData);
-    
-    if (!result.success) {
+    try {
+      const { confirmPassword, ...userData } = formData;
+      
+      // Check if this is an IT team registration that needs approval
+      const needsApproval = ['it-support', 'team-lead', 'admin'].includes(formData.role);
+      
+      if (needsApproval) {
+        // Submit registration request for approval
+        const response = await authAPI.submitRegistrationRequest(userData);
+        setRegistrationSuccess(true);
+      } else {
+        // Direct registration for reporters
+        const result = await register(userData);
+        if (!result.success) {
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError(error.response?.data?.message || 'Registration failed');
       setLoading(false);
     }
   };
@@ -113,6 +130,47 @@ const Register = () => {
   const handleGoogleRegister = () => {
     authAPI.googleLogin();
   };
+
+  if (registrationSuccess) {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-header">
+            <h1 className="auth-title">Registration Submitted</h1>
+            <p className="auth-subtitle">Your request is pending approval</p>
+          </div>
+
+          <div className="approval-notice">
+            <div className="notice-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="notice-content">
+              <h3>Registration Request Submitted Successfully!</h3>
+              <p>
+                Your registration as an IT team member has been submitted for approval. 
+                An administrator or team lead will review your request and approve your account.
+              </p>
+              <p>
+                You will receive an email notification once your account has been approved 
+                and you can then log in to the system.
+              </p>
+            </div>
+          </div>
+
+          <div className="auth-footer">
+            <p>
+              Already have an account?{' '}
+              <Link to="/login" className="auth-link">
+                Sign in here
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-container">
@@ -272,6 +330,20 @@ const Register = () => {
             </div>
           </div>
 
+          {['it-support', 'team-lead', 'admin'].includes(formData.role) && (
+            <div className="approval-warning">
+              <div className="warning-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div className="warning-content">
+                <strong>Approval Required</strong>
+                <p>IT team registrations require approval from an administrator or team lead before you can access the system.</p>
+              </div>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -280,10 +352,18 @@ const Register = () => {
             {loading ? (
               <>
                 <span className="spinner"></span>
-                Creating Account...
+                {['it-support', 'team-lead', 'admin'].includes(formData.role) 
+                  ? 'Submitting Request...' 
+                  : 'Creating Account...'
+                }
               </>
             ) : (
-              'Create Account'
+              <>
+                {['it-support', 'team-lead', 'admin'].includes(formData.role) 
+                  ? 'Submit Registration Request' 
+                  : 'Create Account'
+                }
+              </>
             )}
           </button>
         </form>

@@ -4,6 +4,7 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: 'http://localhost:5000/api',
   timeout: 10000,
+  withCredentials: true,
 });
 
 // Request interceptor to add auth token
@@ -36,13 +37,14 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (userData) => api.post('/auth/register', userData),
+  submitRegistrationRequest: (userData) => api.post('/auth/registration-request', userData),
   validateToken: (token) => api.get('/auth/validate', {
     headers: { Authorization: `Bearer ${token}` }
   }),
   updateProfile: (profileData) => api.put('/auth/profile', profileData),
   changePassword: (currentPassword, newPassword) => 
     api.put('/auth/change-password', { currentPassword, newPassword }),
-   googleLogin: () => {
+  googleLogin: () => {
     window.location.href = 'http://localhost:5000/api/auth/google';
   },
 };
@@ -78,6 +80,11 @@ export const usersAPI = {
   update: (id, userData) => api.put(`/users/${id}`, userData),
   delete: (id) => api.delete(`/users/${id}`),
   getTeamMembers: () => api.get('/users/team-members'),
+  getRegistrationRequests: () => api.get('/users/registration-requests'),
+  approveRegistrationRequest: (id, approvalData) => 
+    api.put(`/users/registration-requests/${id}/approve`, approvalData),
+  rejectRegistrationRequest: (id, rejectionData) => 
+    api.put(`/users/registration-requests/${id}/reject`, rejectionData),
 };
 
 // Categories API
@@ -106,6 +113,5 @@ export const analyticsAPI = {
       responseType: 'blob'
     }),
 };
-
 
 export default api;
