@@ -174,7 +174,7 @@ const RegistrationRequests = () => {
               <div className="request-details">
                 <div className="detail-item">
                   <span className="detail-label">Requested Role:</span>
-                  <span className={`badge badge-${request.role}`}>
+                  <span className={`detail-value badge badge-${request.role}`}>
                     {request.role.replace('-', ' ').toUpperCase()}
                   </span>
                 </div>

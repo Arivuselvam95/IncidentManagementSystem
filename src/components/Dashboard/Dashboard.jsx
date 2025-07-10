@@ -37,6 +37,7 @@ const Dashboard = () => {
       setStats(statsRes.data);
       setRecentIncidents(incidentsRes.data);
       setChartData(chartRes.data);
+      console.log(chartRes.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {

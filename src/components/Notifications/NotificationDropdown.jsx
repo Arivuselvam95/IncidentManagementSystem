@@ -33,7 +33,7 @@ const NotificationDropdown = ({ onClose }) => {
     }
   };
 
-  const recentNotifications = notifications.slice(0, 10);
+  const recentNotifications = notifications.slice(0, 15);
 
   return (
     <div className="notification-dropdown">
@@ -106,7 +106,7 @@ const NotificationDropdown = ({ onClose }) => {
         )}
       </div>
 
-      {notifications.length > 10 && (
+      {notifications.length > 15 && (
         <div className="notification-dropdown-footer">
           <button className="view-all-btn">
             View All Notifications ({notifications.length})

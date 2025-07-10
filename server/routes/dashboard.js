@@ -148,12 +148,13 @@ router.get('/chart-data', auth, async (req, res) => {
       const date = new Date(startDate.getTime() + (i * 24 * 60 * 60 * 1000));
       dateRange.push({
         date: date.toISOString().split('T')[0],
-        incidents: 0
+        created: 0,
+        resolved: 0
       });
     }
 
-    // Get incident counts by day
-    const incidents = await Incident.aggregate([
+    // Get created incidents by day
+    const createdIncidents = await Incident.aggregate([
       {
         $match: {
           createdAt: { $gte: startDate, $lte: endDate }
@@ -169,15 +170,39 @@ router.get('/chart-data', auth, async (req, res) => {
       }
     ]);
 
-    // Merge with date range
-    const incidentMap = incidents.reduce((map, item) => {
+    // Get resolved incidents by day
+    const resolvedIncidents = await Incident.aggregate([
+      {
+        $match: {
+          'resolution.resolvedAt': { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$resolution.resolvedAt" }
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Create maps for quick lookup
+    const createdMap = createdIncidents.reduce((map, item) => {
       map[item._id] = item.count;
       return map;
     }, {});
 
+    const resolvedMap = resolvedIncidents.reduce((map, item) => {
+      map[item._id] = item.count;
+      return map;
+    }, {});
+
+    // Merge with date range
     const chartData = dateRange.map(day => ({
       date: day.date,
-      incidents: incidentMap[day.date] || 0
+      created: createdMap[day.date] || 0,
+      resolved: resolvedMap[day.date] || 0
     }));
 
     res.json(chartData);

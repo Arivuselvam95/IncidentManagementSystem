@@ -257,10 +257,9 @@
 .chart-bar {
   width: 100%;
   max-width: 40px;
-  background: linear-gradient(180deg, var(--primary-500), var(--primary-600));
+  background: var(--primary-500);
   border-radius: var(--radius-sm);
   position: relative;
-  cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
   align-items: flex-end;
@@ -268,8 +267,13 @@
   padding-top: var(--spacing-1);
 }
 
+.chart-bar.resolved {
+  background-color: var(--success-500);
+  margin-top: 4px;
+}
+
 .chart-bar:hover {
-  background: linear-gradient(180deg, var(--primary-400), var(--primary-500));
+  opacity: 0.9;
   transform: scale(1.05);
 }
 

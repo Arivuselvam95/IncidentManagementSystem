@@ -11,7 +11,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const { user, login, error, setError } = useAuth();
-
+  // console.log(user);
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }

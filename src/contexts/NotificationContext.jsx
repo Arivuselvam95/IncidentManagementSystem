@@ -15,6 +15,26 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [socket, setSocket] = useState(null);
 
+  // Load notifications from localStorage on mount
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem('notifications');
+    if (savedNotifications) {
+      try {
+        const parsed = JSON.parse(savedNotifications);
+        setNotifications(parsed);
+      } catch (error) {
+        console.error('Error loading saved notifications:', error);
+      }
+    }
+  }, []);
+
+  // Save notifications to localStorage whenever they change
+  useEffect(() => {
+    if (notifications.length > 0) {
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+    }
+  }, [notifications]);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -45,10 +65,10 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => [newNotification, ...prev]);
 
     // Auto remove after 5 seconds for success notifications
-    if (notification.type === 'success' || notification.type === 'info') {
+    if (notification.type === 'success') {
       setTimeout(() => {
         removeNotification(id);
-      }, 7500);
+      }, 5000);
     }
   };
 
@@ -71,19 +91,19 @@ export const NotificationProvider = ({ children }) => {
   };
 
   const showSuccess = (message, title = 'Success') => {
-    addNotification({ type: 'success', title, message });
+    addNotification({ type: 'success', title, message, read: false });
   };
 
   const showError = (message, title = 'Error') => {
-    addNotification({ type: 'error', title, message });
+    addNotification({ type: 'error', title, message, read: false });
   };
 
   const showWarning = (message, title = 'Warning') => {
-    addNotification({ type: 'warning', title, message });
+    addNotification({ type: 'warning', title, message, read: false });
   };
 
   const showInfo = (message, title = 'Information') => {
-    addNotification({ type: 'info', title, message });
+    addNotification({ type: 'info', title, message, read: false });
   };
 
   const value = {

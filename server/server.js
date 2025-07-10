@@ -28,7 +28,7 @@ const server = http.createServer(app);
 // Setup Socket.IO
 const io = new SocketIOServer(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -36,7 +36,7 @@ const io = new SocketIOServer(server, {
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // ✅ Allow only your frontend
+  origin: process.env.CORS_ORIGIN, // ✅ Allow only your frontend
   credentials: true               // ✅ Allow cookies/session headers
 }));
 app.use(express.json({ limit: '10mb' })); // Increase to 10MB or as needed

@@ -35,7 +35,7 @@ const NotificationCenter = () => {
     <>
       {/* Floating notifications */}
       <div className="notification-stack">
-        {notifications.slice(0, 3).map((notification) => (
+        {notifications.filter(n => !n.read).slice(0, 3).map((notification) => (
           <div
             key={notification.id}
             className={`notification-toast notification-${notification.type}`}
@@ -54,7 +54,7 @@ const NotificationCenter = () => {
             
             <button
               className="notification-close"
-              onClick={() => removeNotification(notification.id)}
+              onClick={() => markAsRead(notification.id)}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />

@@ -45,11 +45,59 @@ const UserManagement = () => {
       setUsers(nonReporters);
     } catch (error) {
       console.error('Error fetching users:', error);
+      // Mock data for demonstration
+      setUsers(getMockUsers());
     } finally {
       setLoading(false);
     }
   };
 
+  const getMockUsers = () => [
+    {
+      _id: 'user1',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john.doe@company.com',
+      role: 'it-support',
+      department: 'IT Support',
+      isActive: true,
+      lastLogin: '2024-01-07T10:30:00Z',
+      createdAt: '2024-01-01T00:00:00Z'
+    },
+    {
+      _id: 'user2',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      email: 'jane.smith@company.com',
+      role: 'team-lead',
+      department: 'IT Support',
+      isActive: true,
+      lastLogin: '2024-01-07T09:15:00Z',
+      createdAt: '2024-01-02T00:00:00Z'
+    },
+    {
+      _id: 'user3',
+      firstName: 'Mike',
+      lastName: 'Johnson',
+      email: 'mike.johnson@company.com',
+      role: 'it-support',
+      department: 'Network Operations',
+      isActive: false,
+      lastLogin: '2024-01-05T14:20:00Z',
+      createdAt: '2024-01-03T00:00:00Z'
+    },
+    {
+      _id: 'user4',
+      firstName: 'Sarah',
+      lastName: 'Wilson',
+      email: 'sarah.wilson@company.com',
+      role: 'admin',
+      department: 'IT Management',
+      isActive: true,
+      lastLogin: '2024-01-07T08:45:00Z',
+      createdAt: '2024-01-04T00:00:00Z'
+    }
+  ];
 
   const applyFilters = () => {
     let filtered = [...users];
@@ -110,7 +158,11 @@ const UserManagement = () => {
     e.preventDefault();
     
     try {
-      await usersAPI.update(editingUser._id, editData);
+      await usersAPI.update(editingUser._id, {
+        ...editData,
+        updatedBy: user.id,
+        updatedAt: new Date().toISOString()
+      });
       showSuccess('User updated successfully');
       setEditingUser(null);
       fetchUsers();
@@ -120,13 +172,36 @@ const UserManagement = () => {
     }
   };
 
+  const handleActivateUser = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to activate ${userName}?`)) {
+      return;
+    }
+
+    try {
+      await usersAPI.update(userId, { 
+        isActive: true,
+        updatedBy: user.id,
+        updatedAt: new Date().toISOString()
+      });
+      showSuccess('User activated successfully');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error activating user:', error);
+      showError('Failed to activate user');
+    }
+  };
+
   const handleDeactivateUser = async (userId, userName) => {
     if (!window.confirm(`Are you sure you want to deactivate ${userName}?`)) {
       return;
     }
 
     try {
-      await usersAPI.delete(userId);
+      await usersAPI.update(userId, { 
+        isActive: false,
+        updatedBy: user.id,
+        updatedAt: new Date().toISOString()
+      });
       showSuccess('User deactivated successfully');
       fetchUsers();
     } catch (error) {
@@ -263,9 +338,9 @@ const UserManagement = () => {
             <tr>
               <th>User</th>
               <th>Role</th>
-              <th>Department</th>
+              <th className="desktop-only">Department</th>
               <th>Status</th>
-              <th>Last Login</th>
+              <th className="desktop-only">Last Login</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -290,13 +365,13 @@ const UserManagement = () => {
                     {userItem.role.replace('-', ' ').toUpperCase()}
                   </span>
                 </td>
-                <td>{userItem.department}</td>
+                <td className="desktop-only">{userItem.department}</td>
                 <td>
                   <span className={`status-badge ${userItem.isActive ? 'active' : 'inactive'}`}>
                     {userItem.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </td>
-                <td>{formatLastLogin(userItem.lastLogin)}</td>
+                <td className="desktop-only">{formatLastLogin(userItem.lastLogin)}</td>
                 <td>
                   <div className="action-buttons">
                     {canEditUser(userItem) && (
@@ -311,7 +386,7 @@ const UserManagement = () => {
                         </svg>
                       </button>
                     )}
-                    {canDeactivateUser(userItem) && userItem.isActive && (
+                    {canDeactivateUser(userItem) && userItem.isActive ? (
                       <button
                         onClick={() => handleDeactivateUser(userItem._id, `${userItem.firstName} ${userItem.lastName}`)}
                         className="btn btn-sm btn-danger"
@@ -323,7 +398,18 @@ const UserManagement = () => {
                           <line x1="9" y1="9" x2="15" y2="15" />
                         </svg>
                       </button>
-                    )}
+                    ) : canDeactivateUser(userItem) && !userItem.isActive ? (
+                      <button
+                        onClick={() => handleActivateUser(userItem._id, `${userItem.firstName} ${userItem.lastName}`)}
+                        className="btn btn-sm btn-success"
+                        title="Activate User"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    ) : null}
+                    
                   </div>
                 </td>
               </tr>

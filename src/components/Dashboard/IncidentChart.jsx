@@ -4,18 +4,11 @@ import './Dashboard.css';
 const IncidentChart = ({ data }) => {
   const [timeRange, setTimeRange] = useState('7d');
 
-  // Mock chart data - in real app, this would be actual chart rendering
-  const chartData = data || [
-    { date: '2024-01-01', incidents: 12 },
-    { date: '2024-01-02', incidents: 8 },
-    { date: '2024-01-03', incidents: 15 },
-    { date: '2024-01-04', incidents: 6 },
-    { date: '2024-01-05', incidents: 11 },
-    { date: '2024-01-06', incidents: 9 },
-    { date: '2024-01-07', incidents: 13 }
-  ];
-
-  const maxValue = Math.max(...chartData.map(d => d.incidents));
+  // Calculate maximum value for scaling
+  const maxValue = Math.max(
+    ...data.map(d => Math.max(d.created, d.resolved)),
+    1 // Ensure at least 1 to avoid division by zero
+  );
   
   return (
     <div className="chart-card">
@@ -28,24 +21,38 @@ const IncidentChart = ({ data }) => {
             className="form-select chart-select"
           >
             <option value="7d">Last 7 days</option>
+            <option value="14d">Last 14 days</option>
             <option value="30d">Last 30 days</option>
-            <option value="90d">Last 3 months</option>
           </select>
         </div>
       </div>
       
       <div className="chart-container">
         <div className="chart-grid">
-          {chartData.map((item, index) => (
+          {data.map((item, index) => (
             <div key={index} className="chart-bar-container">
-              <div
-                className="chart-bar"
+              <div 
+                className="chart-bar created" 
                 style={{
-                  height: `${(item.incidents / maxValue) * 100}%`
+                  height: `${(item.created / maxValue) * 80}%`,
+                  backgroundColor: 'var(--primary-500)'
                 }}
-                title={`${item.incidents} incidents on ${item.date}`}
+                title={`${item.created} created`}
               >
-                <span className="chart-value">{item.incidents}</span>
+                {item.created > 0 && (
+                  <span className="chart-value">{item.created}</span>
+                )}
+              </div>
+              <div 
+                className="chart-bar resolved chart-bar-resolved" 
+                style={{
+                  height: `${(item.resolved / maxValue) * 80}%`
+                }}
+                title={`${item.resolved} resolved`}
+              >
+                {item.resolved > 0 && (
+                  <span className="chart-value">{item.resolved}</span>
+                )}
               </div>
               <div className="chart-label">
                 {new Date(item.date).toLocaleDateString('en-US', { 
@@ -60,8 +67,12 @@ const IncidentChart = ({ data }) => {
       
       <div className="chart-legend">
         <div className="legend-item">
-          <div className="legend-color primary"></div>
-          <span>Total Incidents</span>
+          <div className="legend-color" style={{ backgroundColor: 'var(--primary-500)' }}></div>
+          <span>Created</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-color" style={{ backgroundColor: 'var(--success-500)' }}></div>
+          <span>Resolved</span>
         </div>
       </div>
     </div>

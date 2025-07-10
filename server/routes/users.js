@@ -15,7 +15,7 @@ router.get('/', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const users = await User.find({ isActive: true })
+    const users = await User.find()
       .select('-password')
       .sort({ firstName: 1, lastName: 1 });
 
@@ -265,10 +265,13 @@ router.put('/:id', auth, async (req, res) => {
     const adminOnlyUpdates = ['email', 'role', 'department', 'isActive', 'expertise', 'maxWorkload'];
 
     // Regular users can only update basic profile fields
-    const updatableFields =( currentUser.role === 'admin' )
-      ? [...allowedUpdates, ...adminOnlyUpdates]
-      : allowedUpdates;
+    let updatableFields = [...allowedUpdates];
 
+if (currentUser.role === 'admin') {
+  updatableFields.push(...adminOnlyUpdates);
+} else if (currentUser.role === 'team-lead') {
+  updatableFields.push('isActive'); // Allow team-leads to update activation
+}
     // Apply updates
     updatableFields.forEach(field => {
       if (req.body[field] !== undefined) {
